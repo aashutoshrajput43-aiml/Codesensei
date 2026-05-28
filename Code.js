@@ -7,7 +7,7 @@ const codeEditor = CodeMirror.fromTextArea(document.getElementById('codeInput'),
     placeholder: " Welcome! Paste your source code below, and our AI assistant will\n perform a deep architectural and behavioral analysis....\n CodeSensei is an Enterprise AI tool designed to analyze your code:\n-> Detect hidden bugs\n-> Provide optimization refactored solutions instantly. \n-> Also gives you a Git Comment"
 });
 
-const API_KEY = "AIzaSyBrxUfaEOFpArhUpcv0m465dbl8zlcbV-s";
+const API_KEY = "AIzaSyBxJwvsFbO2mwuwoYG8nPZ3WMniGtF8g94";
 
 // DOM Elements
 const analyzeBtn = document.getElementById('analyzeBtn');
