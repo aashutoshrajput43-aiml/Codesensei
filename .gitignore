@@ -1,0 +1,48 @@
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# API Keys (NEVER commit these!)
+.env*.development
+.env*.production
+
+# IDE & Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Node/Package Manager
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Build Output
+dist/
+build/
+out/
+
+# Vercel
+.vercel/
+.vercel
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Temporary Files
+*.tmp
+*.bak
+*.swp
+*~
+
+# Local Development
+local.config.js
