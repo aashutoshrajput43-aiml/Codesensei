@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CodeSensei | Enterprise AI</title>
+    <title>CodeSensei | Enterprise AI Code Analysis</title>
 
     <link rel="stylesheet" href="Code.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fira+Code:wght@400&display=swap" rel="stylesheet">
@@ -46,6 +46,7 @@
             backdrop-filter:blur(10px);
             background:rgba(255,255,255,0.05);
             border-bottom:1px solid rgba(255,255,255,0.1);
+            animation: navSlideDown 0.6s ease-out;
         }
 
         .logo{
@@ -53,17 +54,40 @@
             align-items:center;
             font-size:28px;
             font-weight:600;
+            animation: logoScaleIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
         .logo img{
             width:40px; 
             margin-right:10px;
             border-radius:50%;
+            animation: logoImageRotate 1s ease-out;
+        }
+
+        @keyframes navSlideDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes logoScaleIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes logoImageRotate {
+            from { opacity: 0; transform: rotate(-180deg) scale(0.5); }
+            to { opacity: 1; transform: rotate(0deg) scale(1); }
         }
 
         /* MAIN CONTAINER */
         .container{
             padding:40px;
+            animation: containerFadeIn 0.8s ease-out 0.3s both;
+        }
+
+        @keyframes containerFadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         /* SPLIT VIEW */
@@ -82,12 +106,45 @@
             border-radius:20px;
             backdrop-filter:blur(15px);
             padding:20px;
+            animation: panelSlideUp 0.7s ease-out backwards;
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+
+        .left-panel {
+            animation-delay: 0.4s;
+        }
+
+        .right-panel {
+            animation-delay: 0.5s;
+        }
+
+        .panel:hover {
+            transform: translateY(-5px);
+            border-color: #00bfff;
+            box-shadow: 0 8px 32px rgba(0, 191, 255, 0.2);
+        }
+
+        @keyframes panelSlideUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(40px);
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0);
+            }
         }
 
         .panel-header{
             font-size:20px;
             margin-bottom:15px;
             font-weight:600;
+            animation: headerFadeIn 0.6s ease-out 0.6s both;
+        }
+
+        @keyframes headerFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         /* Original Textarea (Hidden by CodeMirror) */
@@ -103,11 +160,23 @@
             font-size:15px;
             resize:none;
             font-family:'Fira Code', monospace;
+            transition: all 0.3s ease;
+        }
+
+        textarea:focus {
+            box-shadow: 0 0 0 2px rgba(0, 191, 255, 0.3), 0 0 20px rgba(0, 191, 255, 0.2);
+            transform: scale(1.01);
         }
 
         /* BUTTON */
         .action-bar{
             margin-top:20px;
+            animation: actionBarFadeIn 0.6s ease-out 0.7s both;
+        }
+
+        @keyframes actionBarFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         .primary-btn{
@@ -119,12 +188,49 @@
             font-size:16px;
             font-weight:600;
             cursor:pointer;
-            transition:0.3s;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .primary-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .primary-btn:hover::before {
+            width: 300px;
+            height: 300px;
         }
 
         .primary-btn:hover{
             background:#0099cc;
-            transform:scale(1.05);
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 191, 255, 0.4);
+        }
+
+        .primary-btn:active {
+            transform: scale(0.98);
+        }
+
+        .loading-text {
+            margin-left: 15px;
+            font-size: 14px;
+            color: #00bfff;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
         }
 
         /* OUTPUT */
@@ -133,10 +239,65 @@
             background:rgba(0,0,0,0.4);
             border-radius:12px;
             padding:20px;
+            animation: contentFadeIn 0.6s ease-out 0.6s both;
+        }
+
+        @keyframes contentFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         .empty-state{
             opacity:0.7;
+        }
+
+        .code-line {
+            display: block;
+            transition: all 0.3s ease;
+            animation: lineEnter 0.4s ease-out backwards;
+        }
+
+        @keyframes lineEnter {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .error-line {
+            text-decoration: underline wavy #fb7185;
+            text-underline-offset: 4px;
+            background-color: rgba(251, 113, 133, 0.1);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 3px solid #fb7185;
+            padding-left: 8px;
+            animation: errorLineHighlight 0.5s ease-out;
+        }
+
+        @keyframes errorLineHighlight {
+            from {
+                opacity: 0;
+                background-color: rgba(251, 113, 133, 0);
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                background-color: rgba(251, 113, 133, 0.1);
+                transform: translateX(0);
+            }
+        }
+
+        .error-line:hover {
+            background-color: rgba(251, 113, 133, 0.2);
+            box-shadow: 0 0 10px rgba(251, 113, 133, 0.4);
+            padding-left: 12px;
+            animation: errorLineShake 0.3s ease-out;
+        }
+
+        @keyframes errorLineShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-2px); }
+            75% { transform: translateX(2px); }
         }
 
         /* CHAT WIDGET */
@@ -146,10 +307,23 @@
             right:20px;
             width:320px;
             background:rgba(20,20,20,0.9);
-            border:1px solid rgba(255,255,255,0.1);
+            border:2px solid #00bfff;
             border-radius:15px;
             overflow:hidden;
             backdrop-filter:blur(10px);
+            animation: chatSlideUp 0.5s ease-out;
+            box-shadow: 0 8px 32px rgba(0, 191, 255, 0.2);
+        }
+
+        @keyframes chatSlideUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(50px) scale(0.9);
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1);
+            }
         }
 
         .chat-header{
@@ -158,6 +332,7 @@
             justify-content:space-between;
             align-items:center;
             background:rgba(255,255,255,0.08);
+            border-bottom: 1px solid rgba(0, 191, 255, 0.3);
         }
 
         .chat-body{
@@ -166,10 +341,37 @@
             overflow-y:auto;
         }
 
+        .msg {
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 8px;
+            animation: messageBubble 0.4s ease-out;
+        }
+
+        @keyframes messageBubble {
+            from {
+                opacity: 0;
+                transform: translateY(10px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
         .sensei-msg{
             background:rgba(255,255,255,0.08);
-            padding:10px;
-            border-radius:10px;
+            color: #e0e0e0;
+            border-left: 3px solid #00bfff;
+        }
+
+        .user-msg {
+            background: #00bfff;
+            color: #000;
+            align-self: flex-end;
+            margin-left: auto;
+            max-width: 85%;
+            border-radius: 8px 8px 0 8px;
         }
 
         #closeChatBtn{
@@ -178,11 +380,56 @@
             color:white;
             cursor:pointer;
             font-size:16px;
+            transition: all 0.3s ease;
+        }
+
+        #closeChatBtn:hover {
+            color: #fb7185;
+            transform: rotate(90deg) scale(1.2);
+        }
+
+        .solution-panel {
+            animation: panelSlideIn 0.6s ease-out;
+        }
+
+        @keyframes panelSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .badge {
+            background-color: rgba(0, 191, 255, 0.2);
+            color: #00bfff;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            border: 1px solid rgba(0, 191, 255, 0.5);
+            animation: badgePopIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: inline-block;
+            margin-left: 10px;
+        }
+
+        @keyframes badgePopIn {
+            from {
+                opacity: 0;
+                transform: scale(0) rotate(-180deg);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) rotate(0deg);
+            }
         }
 
         /* HIDDEN CLASS */
         .hidden{
-            display:none;
+            display:none !important;
         }
 
         /* MOBILE */
@@ -196,6 +443,13 @@
             .chat-widget{
                 width:90%;
                 right:5%;
+                left:5%;
+            }
+            .navbar {
+                padding: 15px 20px;
+            }
+            .container {
+                padding: 20px;
             }
         }
     </style>
@@ -206,7 +460,7 @@
     <header class="navbar">
         <div class="logo">
             <img src="https://i.pinimg.com/1200x/75/54/03/755403981c702a57e5803a014e601380.jpg" alt="CodeSensei Logo">
-             CodeSensei
+            CodeSensei
         </div>
     </header>
 
@@ -222,7 +476,7 @@
                         Run Analysis
                     </button>
                     <span id="loadingMsg" class="loading-text hidden">
-                        Processing logic...
+                        🔄 Processing logic...
                     </span>
                 </div>
             </div>
