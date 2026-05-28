@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeSensei | Enterprise AI</title>
+
+    <link rel="stylesheet" href="Code.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fira+Code:wght@400&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/display/placeholder.min.js"></script>
+
+    <style>
+        /* RESET */
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+        }
+
+        body{
+            font-family:'Inter', sans-serif;
+            color:white;
+            overflow-x:hidden;
+            background: linear-gradient(rgba(0,0,0,0.75), rgba(0,0,0,0.75)), url('https://i.pinimg.com/1200x/80/3c/c2/803cc24726e912cfdcf79e9b80a60ff0.jpg');
+            background-size:cover;
+            background-position:center;
+            background-repeat:no-repeat;
+            background-attachment:fixed;
+        }
+
+        /* NAVBAR */
+        .navbar{
+            width:100%;
+            padding:20px 40px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            backdrop-filter:blur(10px);
+            background:rgba(255,255,255,0.05);
+            border-bottom:1px solid rgba(255,255,255,0.1);
+        }
+
+        .logo{
+            display:flex;
+            align-items:center;
+            font-size:28px;
+            font-weight:600;
+        }
+
+        .logo img{
+            width:40px; 
+            margin-right:10px;
+            border-radius:50%;
+        }
+
+        /* MAIN CONTAINER */
+        .container{
+            padding:40px;
+        }
+
+        /* SPLIT VIEW */
+        .split-view{
+            display:flex;
+            gap:25px;
+            flex-wrap:wrap;
+        }
+
+        /* PANELS */
+        .panel{
+            flex:1;
+            min-width:320px;
+            background:rgba(255,255,255,0.08);
+            border:1px solid rgba(255,255,255,0.1);
+            border-radius:20px;
+            backdrop-filter:blur(15px);
+            padding:20px;
+        }
+
+        .panel-header{
+            font-size:20px;
+            margin-bottom:15px;
+            font-weight:600;
+        }
+
+        /* Original Textarea (Hidden by CodeMirror) */
+        textarea{
+            width:100%;
+            height:400px;
+            background:rgba(0,0,0,0.4);
+            color:#fff;
+            border:none;
+            outline:none;
+            border-radius:12px;
+            padding:15px;
+            font-size:15px;
+            resize:none;
+            font-family:'Fira Code', monospace;
+        }
+
+        /* BUTTON */
+        .action-bar{
+            margin-top:20px;
+        }
+
+        .primary-btn{
+            padding:12px 24px;
+            border:none;
+            border-radius:10px;
+            background:#00bfff;
+            color:white;
+            font-size:16px;
+            font-weight:600;
+            cursor:pointer;
+            transition:0.3s;
+        }
+
+        .primary-btn:hover{
+            background:#0099cc;
+            transform:scale(1.05);
+        }
+
+        /* OUTPUT */
+        .analysis-content{
+            min-height:400px;
+            background:rgba(0,0,0,0.4);
+            border-radius:12px;
+            padding:20px;
+        }
+
+        .empty-state{
+            opacity:0.7;
+        }
+
+        /* CHAT WIDGET */
+        .chat-widget{
+            position:fixed;
+            bottom:20px;
+            right:20px;
+            width:320px;
+            background:rgba(20,20,20,0.9);
+            border:1px solid rgba(255,255,255,0.1);
+            border-radius:15px;
+            overflow:hidden;
+            backdrop-filter:blur(10px);
+        }
+
+        .chat-header{
+            padding:15px;
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            background:rgba(255,255,255,0.08);
+        }
+
+        .chat-body{
+            padding:15px;
+            height:220px;
+            overflow-y:auto;
+        }
+
+        .sensei-msg{
+            background:rgba(255,255,255,0.08);
+            padding:10px;
+            border-radius:10px;
+        }
+
+        #closeChatBtn{
+            background:none;
+            border:none;
+            color:white;
+            cursor:pointer;
+            font-size:16px;
+        }
+
+        /* HIDDEN CLASS */
+        .hidden{
+            display:none;
+        }
+
+        /* MOBILE */
+        @media(max-width:768px){
+            .split-view{
+                flex-direction:column;
+            }
+            textarea{
+                height:300px;
+            }
+            .chat-widget{
+                width:90%;
+                right:5%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="navbar">
+        <div class="logo">
+            <img src="https://i.pinimg.com/1200x/75/54/03/755403981c702a57e5803a014e601380.jpg" alt="CodeSensei Logo">
+             CodeSensei
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="split-view">
+            <div class="panel left-panel">
+                <div class="panel-header">
+                    Source Code
+                </div>
+                <textarea id="codeInput"></textarea>
+                <div class="action-bar">
+                    <button id="analyzeBtn" class="primary-btn">
+                        Run Analysis
+                    </button>
+                    <span id="loadingMsg" class="loading-text hidden">
+                        Processing logic...
+                    </span>
+                </div>
+            </div>
+
+            <div class="panel right-panel">
+                <div class="panel-header">
+                    Errors
+                    <span id="detectedLangBadge" class="badge hidden">
+                        Language: ?
+                    </span>
+                </div>
+                <div id="analysisOutput" class="analysis-content">
+                    <div class="empty-state">
+                        Awaiting code input to generate diagnostics.
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="resultsSection" class="solution-panel hidden"></section>
+    </main>
+
+    <div id="senseiChatWidget" class="chat-widget hidden">
+        <div class="chat-header">
+            <span>🥷 Sensei AI</span>
+            <button id="closeChatBtn">✖</button>
+        </div>
+        <div id="chatBody" class="chat-body">
+            <div class="msg sensei-msg">
+                Hello! Double-click on any red error line to ask me for a detailed explanation.
+            </div>
+        </div>
+    </div>
+
+    <script src="Code.js"></script>
+
+</body>
+</html>
