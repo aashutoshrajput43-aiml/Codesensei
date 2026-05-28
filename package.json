@@ -1,0 +1,39 @@
+{
+  "name": "codesensei",
+  "version": "2.0.0",
+  "description": "CodeSensei - Enterprise AI Code Analysis Tool with Advanced Animations",
+  "main": "index.html",
+  "scripts": {
+    "start": "echo 'Open index.html in your browser'",
+    "dev": "echo 'Development mode - serve the files locally'",
+    "build": "echo 'No build step required - static site'"
+  },
+  "keywords": [
+    "ai",
+    "code-analysis",
+    "debugging",
+    "optimization",
+    "web-app",
+    "glassmorphism",
+    "animations"
+  ],
+  "authors": [
+    "Aashutosh Rajput",
+    "Aayush Batole"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aashutoshrajput43-aiml/Codesensei.git"
+  },
+  "bugs": {
+    "url": "https://github.com/aashutoshrajput43-aiml/Codesensei/issues"
+  },
+  "homepage": "https://github.com/aashutoshrajput43-aiml/Codesensei#readme",
+  "devDependencies": {
+    "codemirror": "^5.65.13"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
