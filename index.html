@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeSensei | Enterprise AI</title>
+
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Fira+Code:wght@400&family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+    <!-- CodeMirror for Code Editing -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/javascript/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/xml/xml.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/css/css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/python/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/mode/clike/clike.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/addon/display/placeholder.min.js"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.13/theme/dracula.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+
+<body>
+    
+    <!-- Day Mode Pastel Background (Removed as per request, using Night background instead) -->
+
+    <!-- Night Mode WebGL LightRays -->
+    <div id="webgl-lightrays" class="night-lightrays-bg"></div>
+
+    <!-- Advanced VFX Background (Multi-color base) -->
+    <div class="vfx-background"></div>
+
+    <script type="module">
+        import { Renderer, Program, Triangle, Mesh } from 'https://esm.sh/ogl@1.0.11';
+
+        const hexToRgb = (hex) => {
+            const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return m ? [parseInt(m[1], 16) / 255, parseInt(m[2], 16) / 255, parseInt(m[3], 16) / 255] : [1, 1, 1];
+        };
+
+        const getAnchorAndDir = (origin, w, h) => {
+            const outside = 0.2;
+            switch (origin) {
+                case 'top-left': return { anchor: [0, -outside * h], dir: [0.7, 0.7] };
+                case 'top-right': return { anchor: [w, -outside * h], dir: [-0.7, 0.7] };
+                case 'left': return { anchor: [-outside * w, 0.5 * h], dir: [1, 0] };
+                case 'right': return { anchor: [(1 + outside) * w, 0.5 * h], dir: [-1, 0] };
+                case 'bottom-left': return { anchor: [0, (1 + outside) * h], dir: [0.7, -0.7] };
+                case 'bottom-center': return { anchor: [0.5 * w, (1 + outside) * h], dir: [0, -1] };
+                case 'bottom-right': return { anchor: [w, (1 + outside) * h], dir: [-0.7, -0.7] };
+                default: return { anchor: [0.5 * w, -outside * h], dir: [0, 1] };
+            }
+        };
+
+        const container = document.getElementById('webgl-lightrays');
+        if (container) {
+            const config = {
+                raysOrigin: 'top-center',
+                raysColor: '#ffffff', // Not used directly anymore, shader handles colors
+                raysSpeed: 1.2,
+                lightSpread: 1.3, // Larger scale as requested
+                rayLength: 2.0,   // Longer rays reaching across the screen
+                pulsating: true,
+                fadeDistance: 1.0,
+                saturation: 1.0,
+                followMouse: true,
+                mouseInfluence: 0.2,
+                noiseAmount: 0.04,
+                distortion: 0.1
+            };
+
+            const mouse = { x: 0.5, y: 0.5 };
+            const smoothMouse = { x: 0.5, y: 0.5 };
+            let animationId = null;
+
+            const renderer = new Renderer({
+                dpr: Math.min(window.devicePixelRatio, 2),
+                alpha: true
+            });
+            const gl = renderer.gl;
+
+            gl.canvas.style.width = '100%';
+            gl.canvas.style.height = '100%';
+            gl.canvas.style.display = 'block';
+
+            container.appendChild(gl.canvas);
+
+            const vert = `
+                attribute vec2 position;
+                varying vec2 vUv;
+                void main() {
+                    vUv = position * 0.5 + 0.5;
+                    gl_Position = vec4(position, 0.0, 1.0);
+                }
+            `;
+
+            const frag = `
+                precision highp float;
+                uniform float iTime;
+                uniform vec2  iResolution;
+                uniform vec2  rayPos;
+                uniform vec2  rayDir;
+                uniform float raysSpeed;
+                uniform float lightSpread;
+                uniform float rayLength;
+                uniform float pulsating;
+                uniform float fadeDistance;
+                uniform float saturation;
+                uniform vec2  mousePos;
+                uniform float mouseInfluence;
+                uniform float noiseAmount;
+                uniform float distortion;
+                varying vec2 vUv;
+
+                float noise(vec2 st) {
+                    return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+                }
+
+                float rayStrength(vec2 raySource, vec2 rayRefDirection, vec2 coord,
+                                  float seedA, float seedB, float speed) {
+                    vec2 sourceToCoord = coord - raySource;
+                    vec2 dirNorm = normalize(sourceToCoord);
+                    float cosAngle = dot(dirNorm, rayRefDirection);
+                    
+                    float d = distortion * sin(iTime * 1.5 + length(sourceToCoord) * 0.005);
+                    float distortedAngle = cosAngle + d;
+                    
+                    float spreadFactor = pow(max(distortedAngle, 0.0), 1.0 / max(lightSpread, 0.001));
+                    float distance = length(sourceToCoord);
+                    float maxDistance = max(iResolution.x, iResolution.y) * rayLength;
+                    float lengthFalloff = clamp((maxDistance - distance) / maxDistance, 0.0, 1.0);
+                    
+                    float fadeFactor = fadeDistance * max(iResolution.x, iResolution.y);
+                    float fadeFalloff = clamp((fadeFactor - distance) / fadeFactor, 0.0, 1.0);
+                    
+                    float pulse = pulsating > 0.5 ? (0.85 + 0.15 * sin(iTime * speed * 4.0)) : 1.0;
+                    
+                    float baseStrength = clamp(
+                        (0.5 + 0.2 * sin(distortedAngle * seedA + iTime * speed)) +
+                        (0.3 + 0.2 * cos(-distortedAngle * seedB + iTime * speed * 0.8)),
+                        0.0, 1.0
+                    );
+                    
+                    return baseStrength * lengthFalloff * fadeFalloff * spreadFactor * pulse;
+                }
+
+                void main() {
+                    vec2 fragCoord = gl_FragCoord.xy;
+                    vec2 coord = vec2(fragCoord.x, fragCoord.y);
+                    
+                    vec2 finalRayDir = normalize(rayDir);
+                    if (mouseInfluence > 0.0) {
+                        vec2 mouseScreenPos = mousePos * iResolution.xy;
+                        vec2 mouseDirection = normalize(mouseScreenPos - rayPos);
+                        finalRayDir = normalize(mix(finalRayDir, mouseDirection, mouseInfluence));
+                    }
+
+                    float r1 = rayStrength(rayPos, finalRayDir, coord, 45.2, 31.4, 0.8 * raysSpeed);
+                    float r2 = rayStrength(rayPos, finalRayDir, coord, 28.5, 19.8, 1.2 * raysSpeed);
+                    float r3 = rayStrength(rayPos, finalRayDir, coord, 12.1, 56.2, 0.5 * raysSpeed);
+                    
+                    // MULTI-COLOR RAYS
+                    vec3 color1 = vec3(0.0, 0.82, 1.0); // Cyan
+                    vec3 color2 = vec3(0.54, 0.17, 0.89); // Purple
+                    vec3 color3 = vec3(0.0, 0.4, 1.0); // Deep Blue
+                    
+                    vec3 finalColor = (color1 * r1 * 0.4) + (color2 * r2 * 0.4) + (color3 * r3 * 0.2);
+                    float combined = (r1 * 0.4 + r2 * 0.4 + r3 * 0.2);
+                    
+                    finalColor = pow(finalColor, vec3(0.7)) * 1.8; // Boost multi-color intensity
+                    combined = pow(combined, 0.7) * 1.5;
+                    
+                    if (noiseAmount > 0.0) {
+                        float n = noise(coord * 0.01 + iTime * 0.05);
+                        finalColor *= (1.0 - noiseAmount + noiseAmount * n);
+                    }
+
+                    if (saturation != 1.0) {
+                        float gray = dot(finalColor, vec3(0.299, 0.587, 0.114));
+                        finalColor = mix(vec3(gray), finalColor, saturation);
+                    }
+
+                    gl_FragColor = vec4(finalColor, combined);
+                }
+            `;
+
+            const uniforms = {
+                iTime: { value: 0 },
+                iResolution: { value: [1, 1] },
+                rayPos: { value: [0, 0] },
+                rayDir: { value: [0, 1] },
+                raysSpeed: { value: config.raysSpeed },
+                lightSpread: { value: config.lightSpread },
+                rayLength: { value: config.rayLength },
+                pulsating: { value: config.pulsating ? 1.0 : 0.0 },
+                fadeDistance: { value: config.fadeDistance },
+                saturation: { value: config.saturation },
+                mousePos: { value: [0.5, 0.5] },
+                mouseInfluence: { value: config.mouseInfluence },
+                noiseAmount: { value: config.noiseAmount },
+                distortion: { value: config.distortion }
+            };
+
+            const geometry = new Triangle(gl);
+            const program = new Program(gl, {
+                vertex: vert,
+                fragment: frag,
+                uniforms,
+                transparent: true
+            });
+            const mesh = new Mesh(gl, { geometry, program });
+
+            const updatePlacement = () => {
+                const { clientWidth: wCSS, clientHeight: hCSS } = container;
+                renderer.setSize(wCSS, hCSS);
+                const dpr = renderer.dpr;
+                const w = wCSS * dpr;
+                const h = hCSS * dpr;
+                
+                uniforms.iResolution.value = [w, h];
+                const { anchor, dir } = getAnchorAndDir(config.raysOrigin, w, h);
+                uniforms.rayPos.value = anchor;
+                uniforms.rayDir.value = dir;
+            };
+
+            const loop = (t) => {
+                if (container.offsetWidth === 0) {
+                    animationId = requestAnimationFrame(loop);
+                    return;
+                }
+
+                uniforms.iTime.value = t * 0.001;
+                
+                if (config.followMouse && config.mouseInfluence > 0.0) {
+                    const smoothing = 0.95;
+                    smoothMouse.x = smoothMouse.x * smoothing + mouse.x * (1 - smoothing);
+                    smoothMouse.y = smoothMouse.y * smoothing + mouse.y * (1 - smoothing);
+                    uniforms.mousePos.value = [smoothMouse.x, 1.0 - smoothMouse.y];
+                }
+
+                renderer.render({ scene: mesh });
+                animationId = requestAnimationFrame(loop);
+            };
+
+            window.addEventListener('resize', updatePlacement);
+            updatePlacement();
+            animationId = requestAnimationFrame(loop);
+
+            if (config.followMouse) {
+                window.addEventListener('mousemove', (e) => {
+                    const rect = container.getBoundingClientRect();
+                    const width = rect.width || window.innerWidth;
+                    const height = rect.height || window.innerHeight;
+                    const left = rect.left || 0;
+                    const top = rect.top || 0;
+                    
+                    mouse.x = (e.clientX - left) / width;
+                    mouse.y = (e.clientY - top) / height;
+                });
+            }
+        }
+    </script>
+
+    <!-- App Container -->
+    <div class="app-layout">
+        <!-- Sidebar for History -->
+        <aside class="sidebar">
+            <div class="logo">
+                <img src="https://i.pinimg.com/1200x/75/54/03/755403981c702a57e5803a014e601380.jpg" alt="CodeSensei Logo">
+                CodeSensei
+            </div>
+            
+            <button id="newAnalysisBtn" class="primary-btn full-width mt-20">
+                + New Analysis
+            </button>
+
+            <div class="history-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <div class="history-title" style="margin-bottom: 0;">Recent Analyses</div>
+                    <button id="clearHistoryBtn" class="clear-btn" style="background: none; border: none; color: var(--text-sub); font-size: 0.8rem; cursor: pointer; text-decoration: underline; transition: color 0.3s;">Clear</button>
+                </div>
+                <div id="historyList" class="history-list">
+                    <!-- History items will be injected here -->
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="topbar">
+                <div class="language-selector">
+                    <label for="langOverride">Language: </label>
+                    <select id="langOverride" class="glass-select">
+                        <option value="auto">Auto-Detect</option>
+                        <option value="javascript">JavaScript</option>
+                        <option value="python">Python</option>
+                        <option value="java">Java</option>
+                        <option value="cpp">C++</option>
+                        <option value="htmlmixed">HTML/CSS</option>
+                    </select>
+                </div>
+                <div class="actions" style="display:flex; align-items:center; gap:15px;">
+                    <!-- Theme Toggle -->
+                    <button id="themeToggleBtn" class="theme-btn" title="Toggle Day/Night Mode">
+                        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+                        <svg class="icon-moon hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                    </button>
+                    <button id="exportReportBtn" class="secondary-btn hidden" title="Export as Markdown">
+                        ⬇ Export Report
+                    </button>
+                </div>
+            </header>
+
+            <div class="container">
+                <section class="split-view">
+                    <div class="panel left-panel glowing-card group">
+                        <div class="glowing-card-mesh-border"></div>
+                        <div class="glowing-card-mesh-bg"></div>
+                        <div class="glowing-card-glow"></div>
+                        <div class="glowing-card-content relative z-10 w-full h-full overflow-hidden bg-[var(--card-bg)] bg-no-repeat rounded-[inherit] border border-white/25">
+                            <div class="panel-header">
+                                Source Code
+                            </div>
+                            <textarea id="codeInput"></textarea>
+                            <div class="action-bar">
+                                <button id="analyzeBtn" class="primary-btn group">
+                                    <!-- Day Mode Content -->
+                                    <span class="btn-content-day">
+                                        <svg class="lucide-sparkles" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>
+                                        <span class="btn-text-swap" data-default="Analyze" data-active="Analyzing">Analyze</span>
+                                        <svg class="lucide-arrow-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                                    </span>
+                                    
+                                    <!-- Night Mode Content -->
+                                    <span class="btn-content-night">
+                                        Analyze Code <svg class="lucide-arrow-right" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+                                    </span>
+
+                                    <!-- Night Mode LightBeam Layers -->
+                                    <div class="lightbeam-border"></div>
+                                    <div class="lightbeam-inner"></div>
+                                    <div class="lightbeam-shine"></div>
+
+                                    <!-- Day Mode Cursor Glow Layer -->
+                                    <div class="day-cursor-glow"></div>
+                                </button>
+                                <span id="loadingMsg" class="loading-text hidden">
+                                    Processing logic...
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel right-panel glowing-card group">
+                        <div class="glowing-card-mesh-border"></div>
+                        <div class="glowing-card-mesh-bg"></div>
+                        <div class="glowing-card-glow"></div>
+                        <div class="glowing-card-content relative z-10 w-full h-full overflow-hidden bg-[var(--card-bg)] bg-no-repeat rounded-[inherit] border border-white/25">
+                            <div class="panel-header">
+                                Diagnostics
+                                <span id="detectedLangBadge" class="badge hidden">
+                                    Language: ?
+                                </span>
+                            </div>
+                            <div id="analysisOutput" class="analysis-content">
+                                <div class="empty-state">
+                                    Awaiting code input to generate diagnostics.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="resultsSection" class="solution-panel hidden"></section>
+            </div>
+        </main>
+    </div>
+
+    <!-- Chat Widget -->
+    <div id="senseiChatWidget" class="chat-widget hidden">
+        <div class="chat-header">
+            <span>🥷 Sensei AI</span>
+            <button id="closeChatBtn">✖</button>
+        </div>
+        <div id="chatBody" class="chat-body">
+            <div class="msg sensei-msg">
+                Hello! Double-click on any red error line to ask me for a detailed explanation.
+            </div>
+        </div>
+        <div class="chat-footer">
+            <input type="text" id="chatInput" placeholder="Ask a follow-up question..." autocomplete="off">
+            <button id="sendChatBtn">➤</button>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="toast-container hidden">
+        <div id="toastMsg" class="toast-msg"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
